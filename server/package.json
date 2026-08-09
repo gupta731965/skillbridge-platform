@@ -1,0 +1,28 @@
+{
+  "name": "skillbridge-server",
+  "version": "1.0.0",
+  "description": "SkillBridge AI-powered micro-credentialing API",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "test": "echo \"No tests configured\""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["skillbridge", "ai", "credentials", "hackathon"],
+  "author": "SkillBridge Team",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "body-parser": "^2.3.0",
+    "cors": "^2.8.6",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "mongoose": "^9.9.1",
+    "openai": "^7.4.0"
+  }
+}
