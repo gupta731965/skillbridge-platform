@@ -189,13 +189,26 @@ export const verifyBadge = async (hash: string): Promise<VerificationResult> => 
     const fullHash = hexOnly.length >= 64 ? hexOnly.slice(0, 64) : (hexOnly + '0000000000000000000000000000000000000000000000000000000000000000').slice(0, 64);
     const shortId = hexOnly.slice(0, 12).toUpperCase();
 
+    let fallbackName = 'Verified Candidate';
+    let fallbackEmail = 'candidate@skillbridge.io';
+    if (typeof window !== 'undefined') {
+      try {
+        const candStored = localStorage.getItem('skillbridge_user');
+        if (candStored) {
+          const parsed = JSON.parse(candStored);
+          if (parsed?.name) fallbackName = parsed.name;
+          if (parsed?.email) fallbackEmail = parsed.email;
+        }
+      } catch (e) {}
+    }
+
     return {
       verified: true,
       badge: {
         id: `badge_${shortId.toLowerCase()}`,
         _id: `badge_${shortId.toLowerCase()}`,
         userId: `user_${shortId.toLowerCase()}`,
-        userName: 'Verified Candidate',
+        userName: fallbackName,
         assessmentId: `assess_${shortId.toLowerCase()}`,
         badgeHash: fullHash,
         shortId: shortId,
@@ -223,8 +236,8 @@ export const verifyBadge = async (hash: string): Promise<VerificationResult> => 
         engine: 'simulated',
       },
       candidate: {
-        name: 'Verified Candidate',
-        email: 'candidate@skillbridge.io',
+        name: fallbackName,
+        email: fallbackEmail,
       },
     };
   }

@@ -16,11 +16,26 @@ exports.verifyBadge = async (req, res) => {
       const Assessment = require('../models/Assessment');
       const User = require('../models/User');
 
-      const clean = hash.trim().toUpperCase().replace(/^#/, '');
+      const raw = hash.trim();
+      const clean = raw.toUpperCase().replace(/^#/, '');
+      const lower = raw.toLowerCase();
+
       const badge = await Badge.findOne({
-        $or: [{ badgeHash: hash.trim() }, { shortId: clean }, { _id: hash.trim() }]
+        $or: [
+          { badgeHash: raw },
+          { badgeHash: lower },
+          { shortId: clean },
+          { shortId: raw.toUpperCase() },
+          { _id: raw }
+        ]
       });
-      if (!badge) return res.status(404).json({ error: 'Badge not found. This credential may be invalid.' });
+
+      if (!badge) {
+        return res.status(404).json({
+          verified: false,
+          error: 'Badge not found. This credential may be invalid or has been tampered with.'
+        });
+      }
 
       const assessment = await Assessment.findById(badge.assessmentId);
       const user = await User.findById(badge.userId).select('name email createdAt');
@@ -34,9 +49,15 @@ exports.verifyBadge = async (req, res) => {
       });
     }
 
+    const candidateName = (result.user && result.user.name) || result.badge.userName || 'Verified Candidate';
+    const candidateEmail = (result.user && result.user.email) || 'candidate@skillbridge.io';
+
     res.json({
       verified: true,
-      badge: result.badge,
+      badge: {
+        ...result.badge.toObject ? result.badge.toObject() : result.badge,
+        userName: candidateName,
+      },
       assessment: result.assessment ? {
         track: result.assessment.track,
         trackName: result.assessment.trackName,
@@ -48,10 +69,10 @@ exports.verifyBadge = async (req, res) => {
         submittedAt: result.assessment.submittedAt,
         engine: result.assessment.engine,
       } : null,
-      candidate: result.user ? {
-        name: result.user.name || result.badge.userName,
-        email: result.user.email,
-      } : { name: result.badge.userName },
+      candidate: {
+        name: candidateName,
+        email: candidateEmail,
+      },
     });
   } catch (err) {
     console.error('[Verify] Error:', err);
