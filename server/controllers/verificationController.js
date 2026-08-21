@@ -1,4 +1,5 @@
 const mockDb = require('../services/mockDb');
+const mongoose = require('mongoose');
 
 exports.verifyBadge = async (req, res) => {
   try {
@@ -20,15 +21,18 @@ exports.verifyBadge = async (req, res) => {
       const clean = raw.toUpperCase().replace(/^#/, '');
       const lower = raw.toLowerCase();
 
-      const badge = await Badge.findOne({
-        $or: [
-          { badgeHash: raw },
-          { badgeHash: lower },
-          { shortId: clean },
-          { shortId: raw.toUpperCase() },
-          { _id: raw }
-        ]
-      });
+      const searchConditions = [
+        { badgeHash: raw },
+        { badgeHash: lower },
+        { shortId: clean },
+        { shortId: raw.toUpperCase() }
+      ];
+
+      if (mongoose.Types.ObjectId.isValid(raw)) {
+        searchConditions.push({ _id: raw });
+      }
+
+      const badge = await Badge.findOne({ $or: searchConditions });
 
       if (!badge) {
         return res.status(404).json({
@@ -37,8 +41,24 @@ exports.verifyBadge = async (req, res) => {
         });
       }
 
-      const assessment = await Assessment.findById(badge.assessmentId);
-      const user = await User.findById(badge.userId).select('name email createdAt');
+      let assessment = null;
+      if (badge.assessmentId) {
+        if (mongoose.Types.ObjectId.isValid(badge.assessmentId)) {
+          assessment = await Assessment.findById(badge.assessmentId);
+        } else {
+          assessment = await Assessment.findOne({ $or: [{ id: badge.assessmentId }, { _id: badge.assessmentId }] }).catch(() => null);
+        }
+      }
+
+      let user = null;
+      if (badge.userId) {
+        if (mongoose.Types.ObjectId.isValid(badge.userId)) {
+          user = await User.findById(badge.userId).select('name email createdAt');
+        } else {
+          user = await User.findOne({ $or: [{ id: badge.userId }, { _id: badge.userId }] }).select('name email createdAt').catch(() => null);
+        }
+      }
+
       result = { badge, assessment, user };
     }
 
